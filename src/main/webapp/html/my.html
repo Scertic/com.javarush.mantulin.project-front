@@ -4,7 +4,7 @@
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
     <link href="/css/my.css" rel="stylesheet">
 </head>
-<body onload="accountsCount;">
+<body>
 <h1>RPG admin panel</h1>
 <h2>Accounts list:</h2>
 <form>
@@ -40,7 +40,10 @@
     <button>2</button>
 </div>
 <script>
-    function getDataForTable(dataPlayers) {
+    async function getDataForTable() {
+        const dataPlayers = await $.get('/rpg-1.0-SNAPSHOT/rest/players');
+        const accountsCount = await countingPlayers();
+        console.log(accountsCount);
         var table = document.getElementById("accountListTable");
         dataPlayers.forEach(d => {
         const r = document.createElement('tr');
@@ -55,15 +58,13 @@
         });
     };
 
-    $.get('/rpg-1.0-SNAPSHOT/rest/players', function(response) {
-        getDataForTable(response);
-        });
+    getDataForTable();
 
-    var accountsCount;
+    async function countingPlayers() {
+        return await $.get('/rpg-1.0-SNAPSHOT/rest/players/count');
+    }
 
-    $.get('/rpg-1.0-SNAPSHOT/rest/players/count', function(response) {
-        accountsCount = response;
-    });
+
 </script>
 </body>
 </html>
