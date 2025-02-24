@@ -2,21 +2,24 @@
 <head>
     <title>RPG</title>
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
-    <link href="/css/my.css" rel="stylesheet">
+    <link href="/rpg-1.0-SNAPSHOT/css/my.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://icons.getbootstrap.com/assets/font/bootstrap-icons.min.css">
 </head>
 <body>
 <h1>RPG admin panel</h1>
 <h2>Accounts list:</h2>
 <form>
     <label for="pages">Count per page:</label>
-    <select id="pages">
-        <option value="three">3</option>
-        <option value="five">5</option>
-        <option value="ten">10</option>
-        <option value="twenty">20</option>
+    <select id="pages" class="form-select">
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
     </select>
 </form>
-<table id="accountListTable" border='1'>
+<table id="accountListTable" class="table table-bordered">
     <thead>
     <tr>
         <th id="id">#</th>
@@ -27,23 +30,38 @@
         <th id="level">Level</th>
         <th id="birthday">Birthday</th>
         <th id="banned">Banned</th>
+        <th id="edit">Edit</th>
+        <th id="del">Delete</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="bodyId">
     <tr>
     </tr>
     </tbody>
 </table>
-<div>
-    Pages:
-    <button>1</button>
-    <button>2</button>
+<div id="btns" class="div btn-group">
+    <div class="div">Pages:</div>
+    <button>11</button>
 </div>
 <script>
-    async function getDataForTable() {
-        const dataPlayers = await $.get('/rpg-1.0-SNAPSHOT/rest/players');
+    let $j = jQuery.noConflict();
+    let currentBtn;
+
+    async function getDataForTable(pageNumber) {
+        console.log(pageNumber)
+        var tBodyForClear = document.getElementById("bodyId");
+        while (tBodyForClear.firstChild) {
+            tBodyForClear.removeChild(tBodyForClear.firstChild);
+        }
+
         const accountsCount = await countingPlayers();
-        console.log(accountsCount);
+        const select = document.getElementById('pages');
+        const rowsCount = parseInt(select.value, 10);
+        if (pageNumber == 0) {
+            countingPages(accountsCount, rowsCount);
+        }
+
+        const dataPlayers = await $j.get('/rpg-1.0-SNAPSHOT/rest/players?pageNumber='+pageNumber+'&pageSize='+rowsCount);
         var table = document.getElementById("accountListTable");
         dataPlayers.forEach(d => {
         const r = document.createElement('tr');
@@ -52,19 +70,80 @@
                                                     const propertyName = header.getAttribute('id');
                                                     const value = d[propertyName];
                                                     cell.textContent = value;
+                                                    if (propertyName === 'edit') {
+                                                        cell.width = 41;
+                                                        cell.height = 41;
+                                                        cell.align = 'center';
+                                                        cell.innerHTML = '<i class="bi bi-pencil"></i>';
+                                                    }
+                                                    if (propertyName === 'del') {
+                                                        cell.width = 41;
+                                                        cell.height = 41;
+                                                        cell.align = 'center';
+                                                        cell.innerHTML = '<i class="bi bi-trash"></i>';
+                                                    }
                                                    }
                                               );
         table.querySelector('tbody').insertAdjacentElement('beforeend', r);
         });
     };
 
-    getDataForTable();
+    getDataForTable(0);
 
     async function countingPlayers() {
-        return await $.get('/rpg-1.0-SNAPSHOT/rest/players/count');
+        return await $j.get('/rpg-1.0-SNAPSHOT/rest/players/count');
+    };
+
+    //Функция отображения кнопок страниц
+    function countingPages(allCount, countPerPage) {
+        var div = document.getElementById("btns");
+        div.innerHTML = '<div class="div">Pages:</div>';
+
+            for (let i = 0; i < allCount/countPerPage; i++) {
+                const button = document.createElement('button');
+                if (i === 0) {
+                    button.className = 'btn btn-primary';
+                    currentBtn = button;
+                } else {button.className = 'btn btn-secondary'}
+                button.textContent = i+1;
+                button.id = 'id'+(i+1);
+                button.addEventListener('click', () => {handleBtnChange(button.id);});
+                div.insertAdjacentElement('beforeend', button);
+            }
+    };
+
+    // Функция для обработки выбора в выпадающем списке
+    async function handlePageChange() {
+        const select = document.getElementById('pages');
+        const selectedValue = parseInt(select.value, 10);
+        const playersCount = await countingPlayers();
+        countingPages(playersCount, selectedValue);
+        getDataForTable(0);
+    }
+
+    // Добавляем обработчик события change в выпадающем списке
+    document.getElementById('pages').addEventListener('change', handlePageChange);
+
+    // Функция для обработки выбора в кнопках
+    function handleBtnChange(id) {
+        const select = document.getElementById(id);
+        currentBtn.className = 'btn btn-secondary';
+        select.className = 'btn btn-primary';
+        currentBtn = select;
+        const selectedValue = parseInt(select.textContent, 10);
+        getDataForTable(selectedValue-1);
     }
 
 
 </script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
 </body>
 </html>
