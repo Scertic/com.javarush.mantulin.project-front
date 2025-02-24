@@ -1,6 +1,7 @@
 <html>
 <head>
     <title>RPG</title>
+    <meta charset="utf-8">
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
     <link href="/rpg-1.0-SNAPSHOT/css/my.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
@@ -48,7 +49,6 @@
     let currentBtn;
 
     async function getDataForTable(pageNumber) {
-        console.log(pageNumber)
         var tBodyForClear = document.getElementById("bodyId");
         while (tBodyForClear.firstChild) {
             tBodyForClear.removeChild(tBodyForClear.firstChild);
@@ -81,6 +81,7 @@
                                                         cell.height = 41;
                                                         cell.align = 'center';
                                                         cell.innerHTML = '<i class="bi bi-trash"></i>';
+                                                        cell.addEventListener('click', deleteAccount);
                                                     }
                                                    }
                                               );
@@ -95,16 +96,22 @@
     };
 
     //Функция отображения кнопок страниц
-    function countingPages(allCount, countPerPage) {
+    function countingPages(allCount, countPerPage, del) {
         var div = document.getElementById("btns");
         div.innerHTML = '<div class="div">Pages:</div>';
-
             for (let i = 0; i < allCount/countPerPage; i++) {
                 const button = document.createElement('button');
-                if (i === 0) {
+                if (i === 0 && del === undefined) {
                     button.className = 'btn btn-primary';
                     currentBtn = button;
-                } else {button.className = 'btn btn-secondary'}
+                } else {
+                    if (i === del) {
+                        button.className = 'btn btn-primary';
+                        currentBtn = button;
+                    } else {
+                        button.className = 'btn btn-secondary'
+                    }
+                }
                 button.textContent = i+1;
                 button.id = 'id'+(i+1);
                 button.addEventListener('click', () => {handleBtnChange(button.id);});
@@ -132,6 +139,32 @@
         currentBtn = select;
         const selectedValue = parseInt(select.textContent, 10);
         getDataForTable(selectedValue-1);
+    }
+
+    async function deleteAccount(event) {
+
+        const clickedRow = event.target.closest('td').closest('tr');
+        const idPlayer = clickedRow.cells[0].textContent;
+        try {
+            // Выполняем асинхронный запрос на удаление
+            await $j.ajax({
+                url: '/rpg-1.0-SNAPSHOT/rest/players/' + idPlayer,
+                type: 'DELETE',
+                success: async function(response) {
+                    console.log('Удален игрок с ID:', idPlayer);
+                    const select = document.getElementById('pages');
+                    const selectedValue = parseInt(select.value, 10);
+                    const playersCount = await countingPlayers();
+                    countingPages(playersCount, selectedValue, parseInt(currentBtn.textContent, 10)-1);
+                    getDataForTable(parseInt(currentBtn.textContent, 10)-1); // Обновляем таблицу
+                },
+                error: function(error) {
+                    console.error('Ошибка при удалении игрока:', error);
+                }
+            });
+        } catch (error) {
+            console.error('Ошибка при удаления игрока:', error);
+        }
     }
 
 
