@@ -75,6 +75,7 @@
                                                         cell.height = 41;
                                                         cell.align = 'center';
                                                         cell.innerHTML = '<i class="bi bi-pencil"></i>';
+                                                        cell.addEventListener('click', editAccount);
                                                     }
                                                     if (propertyName === 'del') {
                                                         cell.width = 41;
@@ -142,28 +143,37 @@
     }
 
     async function deleteAccount(event) {
+        const clicked = event.target;
+        if (clicked.tagName === 'I') {
+            const clickedRow = clicked.closest('td').closest('tr');
+            const idPlayer = clickedRow.cells[0].textContent;
+            try {
+                // Выполняем асинхронный запрос на удаление
+                await $j.ajax({
+                    url: '/rpg-1.0-SNAPSHOT/rest/players/' + idPlayer,
+                    type: 'DELETE',
+                    success: async function(response) {
+                        console.log('Удален игрок с ID:', idPlayer);
+                        const select = document.getElementById('pages');
+                        const selectedValue = parseInt(select.value, 10);
+                        const playersCount = await countingPlayers();
+                        countingPages(playersCount, selectedValue, parseInt(currentBtn.textContent, 10)-1);
+                        getDataForTable(parseInt(currentBtn.textContent, 10)-1); // Обновляем таблицу
+                    },
+                    error: function(error) {
+                        console.error('Ошибка при удалении игрока:', error);
+                    }
+                });
+            } catch (error) {
+                console.error('Ошибка при удаления игрока:', error);
+            }
+        }
+    }
 
-        const clickedRow = event.target.closest('td').closest('tr');
-        const idPlayer = clickedRow.cells[0].textContent;
-        try {
-            // Выполняем асинхронный запрос на удаление
-            await $j.ajax({
-                url: '/rpg-1.0-SNAPSHOT/rest/players/' + idPlayer,
-                type: 'DELETE',
-                success: async function(response) {
-                    console.log('Удален игрок с ID:', idPlayer);
-                    const select = document.getElementById('pages');
-                    const selectedValue = parseInt(select.value, 10);
-                    const playersCount = await countingPlayers();
-                    countingPages(playersCount, selectedValue, parseInt(currentBtn.textContent, 10)-1);
-                    getDataForTable(parseInt(currentBtn.textContent, 10)-1); // Обновляем таблицу
-                },
-                error: function(error) {
-                    console.error('Ошибка при удалении игрока:', error);
-                }
-            });
-        } catch (error) {
-            console.error('Ошибка при удаления игрока:', error);
+    async function editAccount(event) {
+        const clicked = event.target;
+        if (clicked.tagName === 'I') {
+            console.log('EDIT');
         }
     }
 
