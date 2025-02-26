@@ -44,9 +44,63 @@
     <div class="div">Pages:</div>
     <button>11</button>
 </div>
+<hr/>
+<button class="btn btn-outline-primary" id="createAccountBtn">Create new account</button>
+<form class="w-50 p-3 border hidden" id="createForm">
+    <div class="form-group row">
+        <label for="nName" class="col-sm-2 col-form-label">Name:</label>
+        <div class="col-sm-10">
+            <input type="text" class="form-control" id="nName" minlength="1" maxlength="12">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nTitle" class="col-sm-2 col-form-label">Title:</label>
+        <div class="col-sm-10">
+            <input type="text" class="form-control" id="nTitle"minlength="1" maxlength="30">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nRace" class="col-sm-2 col-form-label">Race:</label>
+        <div class="col-sm-10">
+            <select class="form-control" id="nRace">
+            </select>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nProfession" class="col-sm-2 col-form-label">Profession:</label>
+        <div class="col-sm-10">
+            <select class="form-control" id="nProfession">
+            </select>
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nLevel" class="col-sm-2 col-form-label">Level:</label>
+        <div class="col-sm-10">
+            <input type="number" class="form-control" id="nLevel"min="0" max="200" value="0">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nBirthday" class="col-sm-2 col-form-label">Birthday:</label>
+        <div class="col-sm-10">
+            <input type="date" class="form-control" id="nBirthday">
+        </div>
+    </div>
+    <div class="form-group row">
+        <label for="nBanned" class="col-sm-2 col-form-label">Banned:</label>
+        <div class="col-sm-10">
+            <select class="form-control" id="nBanned"></select>
+        </div>
+    </div>
+    <div class="form-group row">
+        <button type="button" class="btn btn-outline-primary btn-block" id="saveBtn">Save</button>
+    </div>
+</form>
 <script>
     let $j = jQuery.noConflict();
     let currentBtn;
+    const races = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT'];
+    const professions = ['WARRIOR', 'ROGUE', 'SORCERER', 'CLERIC', 'PALADIN', 'NAZGUL', 'WARLOCK', 'DRUID'];
+    const ban = ['false', 'true'];
 
     async function getDataForTable(pageNumber) {
         var tBodyForClear = document.getElementById("bodyId");
@@ -70,6 +124,12 @@
                                                     const propertyName = header.getAttribute('id');
                                                     const value = d[propertyName];
                                                     cell.textContent = value;
+                                                    if (propertyName === 'birthday') {
+                                                        let date = new Date(value);
+                                                        date = date.toLocaleDateString("en-US");
+                                                        cell.textContent = date;
+                                                        console.log(Date.parse(date)/100);
+                                                    }
                                                     if (propertyName === 'edit') {
                                                         cell.width = 41;
                                                         cell.height = 41;
@@ -171,11 +231,158 @@
     }
 
     async function editAccount(event) {
+        let player = {
+            name: null,
+            title: null,
+            race: null,
+            profession: null,
+            banned: null
+        };
         const clicked = event.target;
         if (clicked.tagName === 'I') {
-            console.log('EDIT');
+            const clickedRow = clicked.closest('td').closest('tr');
+            let clickedCell = clickedRow.cells[8];
+            let delCell = clickedRow.cells[9];
+
+            if (clicked.className === "bi bi-pencil") {
+                clickedCell.innerHTML = '<i class="bi bi-floppy"></i>';
+                delCell.className = 'hidden';
+                makeCellEditableText(clickedRow.cells[1]);
+                makeCellEditableText(clickedRow.cells[2]);
+                makeListFromArray(clickedRow.cells[3], races)
+                makeListFromArray(clickedRow.cells[4], professions)
+                makeListFromArray(clickedRow.cells[7], ban)
+            } else {
+                clickedCell.innerHTML = '<i class="bi bi-pencil"></i>';
+                delCell.className = '';
+                const tbl = document.getElementById('accountListTable');
+                const inputs = tbl.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const cellClosest = input.closest('td');
+                    cellClosest.textContent = input.value;
+                });
+                const selects = tbl.querySelectorAll('select');
+                selects.forEach(select => {
+                    const cellClosest = select.closest('td');
+                    cellClosest.textContent = select.value;
+                });
+                player.name = clickedRow.cells[1].textContent;
+                player.title = clickedRow.cells[2].textContent;
+                player.race = clickedRow.cells[3].textContent;
+                player.profession = clickedRow.cells[4].textContent;
+                player.banned = clickedRow.cells[7].textContent;
+                let playerJson = JSON.stringify(player);
+                console.log(playerJson);
+                try {
+                    await $j.ajax({
+                        url: '/rpg-1.0-SNAPSHOT/rest/players/'+clickedRow.cells[0].textContent, // URL для обновления ячейки
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(player),
+                        success: function(response) {
+                            console.log('Изменения сохранены:', response);
+                        },
+                        error: function(error) {
+                            console.error('Ошибка при сохранении:', error);
+                        }
+                    });
+                    getDataForTable(parseInt(currentBtn.textContent, 10)-1);
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                }
+            }
         }
     }
+
+    function makeCellEditableText(cell) {
+        const originalText = cell.textContent;
+        const input = document.createElement('input');
+        input.id = cell;
+        input.type = 'text';
+        input.value = originalText;
+        cell.textContent = '';
+        cell.appendChild(input);
+        input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    //cell.textContent = input.value; // Сохраняем новое значение
+                }
+            });
+    }
+
+    function makeListFromArray(cell, array) {
+        const originalText = cell.textContent;
+        const select = document.createElement('select');
+        array.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item; // Значение опции
+            option.textContent = item; // Текст опции
+
+            // Если текущий текст ячейки совпадает с элементом массива, выбираем эту опцию
+            if (item === originalText) {
+                option.selected = true;
+            }
+
+            select.appendChild(option); // Добавляем опцию в <select>
+        });
+
+        // Очищаем ячейку и добавляем в нее выпадающий список
+        cell.textContent = '';
+        cell.appendChild(select);
+    }
+
+    (() => {
+        let select = document.getElementById('nRace');
+        races.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item; // Значение опции
+            option.textContent = item; // Текст опции
+            select.appendChild(option); // Добавляем опцию в <select>);
+            });
+        select = document.getElementById('nProfession');
+        professions.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item; // Значение опции
+            option.textContent = item; // Текст опции
+            select.appendChild(option); // Добавляем опцию в <select>);
+            });
+        select = document.getElementById('nBanned');
+        ban.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item; // Значение опции
+            option.textContent = item; // Текст опции
+            select.appendChild(option); // Добавляем опцию в <select>);
+            });
+    })();
+
+    document.getElementById('createAccountBtn').addEventListener('click', () => {
+        document.getElementById('createForm').className = 'w-50 p-3 border';
+        document.getElementById('createAccountBtn').className = 'hidden';
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        let res='';
+        const name = document.getElementById('nName').value;
+        if (name.length < 1 || name.length > 12) {
+            res += 'Name: текст, от 1 до 12 символов\n'
+        }
+        const title = document.getElementById('nTitle').value;
+        if (title.length < 1 || title.length > 200) {
+            res += 'Title: текст, от 1 до 200 символов\n'
+        }
+        const race = document.getElementById('nRace').value;
+        const profession = document.getElementById('nProfession').value;
+        const level = parseInt(document.getElementById('nLevel').value,10);
+        if (level < 0 || level > 100) {
+            res += 'Level: число от 0 до 100\n'
+        }
+        const birthday = document.getElementById('nBirthday').value;
+        const banned = document.getElementById('nBanned').value;
+        document.getElementById('createForm').className = 'hidden';
+        document.getElementById('createAccountBtn').className = 'btn btn-outline-primary';
+        if (res.length !== 0) {
+            alert(res);
+        }
+    });
 
 
 </script>
