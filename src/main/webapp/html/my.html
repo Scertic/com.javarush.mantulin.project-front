@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://icons.getbootstrap.com/assets/font/bootstrap-icons.min.css">
 </head>
 <body>
-<h1>RPG admin panel</h1>
+<h1 align="center">RPG admin panel</h1>
 <h2>Accounts list:</h2>
 <form>
     <label for="pages">Count per page:</label>
@@ -56,7 +56,7 @@
     <div class="form-group row">
         <label for="nTitle" class="col-sm-2 col-form-label">Title:</label>
         <div class="col-sm-10">
-            <input type="text" class="form-control" id="nTitle"minlength="1" maxlength="30">
+            <input type="text" class="form-control" id="nTitle" minlength="1" maxlength="30">
         </div>
     </div>
     <div class="form-group row">
@@ -76,7 +76,7 @@
     <div class="form-group row">
         <label for="nLevel" class="col-sm-2 col-form-label">Level:</label>
         <div class="col-sm-10">
-            <input type="number" class="form-control" id="nLevel"min="0" max="200" value="0">
+            <input type="number" class="form-control" id="nLevel" min="0" max="200" value="0">
         </div>
     </div>
     <div class="form-group row">
@@ -194,6 +194,7 @@
 
     // Функция для обработки выбора в кнопках
     function handleBtnChange(id) {
+        console.log('handleBtnChange');
         const select = document.getElementById(id);
         currentBtn.className = 'btn btn-secondary';
         select.className = 'btn btn-primary';
@@ -359,8 +360,17 @@
         document.getElementById('createAccountBtn').className = 'hidden';
     });
 
-    document.getElementById('saveBtn').addEventListener('click', () => {
+    document.getElementById('saveBtn').addEventListener('click', async () => {
         let res='';
+        let newPlayer = {
+            name: null,
+            title: null,
+            race: null,
+            profession: null,
+            level: null,
+            birthday: null,
+            banned: null
+        };
         const name = document.getElementById('nName').value;
         if (name.length < 1 || name.length > 12) {
             res += 'Name: текст, от 1 до 12 символов\n'
@@ -375,13 +385,48 @@
         if (level < 0 || level > 100) {
             res += 'Level: число от 0 до 100\n'
         }
-        const birthday = document.getElementById('nBirthday').value;
+        const birthday = Date.parse(document.getElementById('nBirthday').value);
+        if (birthday.toString() === 'NaN' || birthday > new Date()) {
+            res += 'Birthday: Укажите корректную дату\n'
+        }
         const banned = document.getElementById('nBanned').value;
-        document.getElementById('createForm').className = 'hidden';
-        document.getElementById('createAccountBtn').className = 'btn btn-outline-primary';
         if (res.length !== 0) {
             alert(res);
+        } else {
+            newPlayer.name = name;
+            newPlayer.title = title;
+            newPlayer.profession = profession;
+            newPlayer.race = race;
+            newPlayer.level = level;
+            newPlayer.birthday = birthday;
+            newPlayer.banned = banned;
+            try {
+                    await $j.ajax({
+                        url: '/rpg-1.0-SNAPSHOT/rest/players',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(newPlayer),
+                        success: function(response) {
+                            console.log('Изменения сохранены:', response);
+                        },
+                        error: function(error) {
+                            console.error('Ошибка при сохранении:', error);
+                        }
+                    });
+                    const accountsCount = await countingPlayers();
+                    const select = document.getElementById('pages');
+                    const rowsCount = parseInt(select.value, 10);
+                    countingPages(accountsCount, rowsCount);
+                    getDataForTable(parseInt(currentBtn.textContent, 10)-1);
+                    name.value = '';
+                    document.getElementById('createForm').className = 'hidden';
+                    document.getElementById('createAccountBtn').className = 'btn btn-outline-primary';
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    alert(error);
+                }
         }
+
     });
 
 
