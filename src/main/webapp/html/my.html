@@ -1,7 +1,8 @@
+<!DOCTYPE html>
 <html>
 <head>
     <title>RPG</title>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
     <link href="/rpg-1.0-SNAPSHOT/css/my.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css"
@@ -9,7 +10,7 @@
     <link rel="stylesheet" href="https://icons.getbootstrap.com/assets/font/bootstrap-icons.min.css">
 </head>
 <body>
-<h1 align="center">RPG admin panel</h1>
+<h1 style="align='center'">RPG admin panel</h1>
 <h2>Accounts list:</h2>
 <form>
     <label for="pages">Count per page:</label>
@@ -95,7 +96,7 @@
         <button type="button" class="btn btn-outline-primary btn-block" id="saveBtn">Save</button>
     </div>
 </form>
-<script>
+<script charset="utf-8">
     let $j = jQuery.noConflict();
     let currentBtn;
     const races = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT'];
@@ -128,7 +129,6 @@
                                                         let date = new Date(value);
                                                         date = date.toLocaleDateString("en-US");
                                                         cell.textContent = date;
-                                                        console.log(Date.parse(date)/100);
                                                     }
                                                     if (propertyName === 'edit') {
                                                         cell.width = 41;
@@ -194,7 +194,6 @@
 
     // Функция для обработки выбора в кнопках
     function handleBtnChange(id) {
-        console.log('handleBtnChange');
         const select = document.getElementById(id);
         currentBtn.className = 'btn btn-secondary';
         select.className = 'btn btn-primary';
@@ -273,7 +272,6 @@
                 player.profession = clickedRow.cells[4].textContent;
                 player.banned = clickedRow.cells[7].textContent;
                 let playerJson = JSON.stringify(player);
-                console.log(playerJson);
                 try {
                     await $j.ajax({
                         url: '/rpg-1.0-SNAPSHOT/rest/players/'+clickedRow.cells[0].textContent, // URL для обновления ячейки
