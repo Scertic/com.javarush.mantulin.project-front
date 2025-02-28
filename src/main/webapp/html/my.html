@@ -98,18 +98,22 @@
 </form>
 <script charset="utf-8">
     let $j = jQuery.noConflict();
+    ///Текущая нажатая кнопка в пэйджинге
     let currentBtn;
     const races = ['HUMAN', 'DWARF', 'ELF', 'GIANT', 'ORC', 'TROLL', 'HOBBIT'];
     const professions = ['WARRIOR', 'ROGUE', 'SORCERER', 'CLERIC', 'PALADIN', 'NAZGUL', 'WARLOCK', 'DRUID'];
     const ban = ['false', 'true'];
 
-    async function getDataForTable(pageNumber) {
-        var tBodyForClear = document.getElementById("bodyId");
+    //Получение данных о игроках с сервера и заливка данных в таблицу
+    async function getAndFillDataForTable(pageNumber) {
+        //Очищаем таблицу (тело)
+        let tBodyForClear = document.getElementById("bodyId");
         while (tBodyForClear.firstChild) {
             tBodyForClear.removeChild(tBodyForClear.firstChild);
         }
 
-        const accountsCount = await countingPlayers();
+
+        const accountsCount = await getPlayersCount();
         const select = document.getElementById('pages');
         const rowsCount = parseInt(select.value, 10);
         if (pageNumber == 0) {
@@ -150,9 +154,9 @@
         });
     };
 
-    getDataForTable(0);
+    getAndFillDataForTable(0);
 
-    async function countingPlayers() {
+    async function getPlayersCount() {
         return await $j.get('/rpg-1.0-SNAPSHOT/rest/players/count');
     };
 
@@ -184,9 +188,9 @@
     async function handlePageChange() {
         const select = document.getElementById('pages');
         const selectedValue = parseInt(select.value, 10);
-        const playersCount = await countingPlayers();
+        const playersCount = await getPlayersCount();
         countingPages(playersCount, selectedValue);
-        getDataForTable(0);
+        getAndFillDataForTable(0);
     }
 
     // Добавляем обработчик события change в выпадающем списке
@@ -199,7 +203,7 @@
         select.className = 'btn btn-primary';
         currentBtn = select;
         const selectedValue = parseInt(select.textContent, 10);
-        getDataForTable(selectedValue-1);
+        getAndFillDataForTable(selectedValue-1);
     }
 
     async function deleteAccount(event) {
@@ -216,9 +220,9 @@
                         console.log('Удален игрок с ID:', idPlayer);
                         const select = document.getElementById('pages');
                         const selectedValue = parseInt(select.value, 10);
-                        const playersCount = await countingPlayers();
+                        const playersCount = await getPlayersCount();
                         countingPages(playersCount, selectedValue, parseInt(currentBtn.textContent, 10)-1);
-                        getDataForTable(parseInt(currentBtn.textContent, 10)-1); // Обновляем таблицу
+                        getAndFillDataForTable(parseInt(currentBtn.textContent, 10)-1); // Обновляем таблицу
                     },
                     error: function(error) {
                         console.error('Ошибка при удалении игрока:', error);
@@ -285,7 +289,7 @@
                             console.error('Ошибка при сохранении:', error);
                         }
                     });
-                    getDataForTable(parseInt(currentBtn.textContent, 10)-1);
+                    getAndFillDataForTable(parseInt(currentBtn.textContent, 10)-1);
                 } catch (error) {
                     console.error('Ошибка:', error);
                 }
@@ -411,11 +415,11 @@
                             console.error('Ошибка при сохранении:', error);
                         }
                     });
-                    const accountsCount = await countingPlayers();
+                    const accountsCount = await getPlayersCount();
                     const select = document.getElementById('pages');
                     const rowsCount = parseInt(select.value, 10);
                     countingPages(accountsCount, rowsCount);
-                    getDataForTable(parseInt(currentBtn.textContent, 10)-1);
+                    getAndFillDataForTable(parseInt(currentBtn.textContent, 10)-1);
                     name.value = '';
                     document.getElementById('createForm').className = 'hidden';
                     document.getElementById('createAccountBtn').className = 'btn btn-outline-primary';
